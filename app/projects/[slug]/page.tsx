@@ -1,16 +1,22 @@
-// app/projects/[slug]/page.tsx  — v3 with dashboard screenshots
+// app/projects/[slug]/page.tsx — Next.js 15 compatible params type
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { getProjectBySlug, projects } from "@/lib/projects";
 import Container from "@/components/Container";
 
-export function generateStaticParams() {
+// Next.js 15: params must be typed as Promise<{slug: string}>
+type Props = {
+  params: Promise<{ slug: string }>;
+};
+
+export async function generateStaticParams() {
   return projects.map((p) => ({ slug: p.slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }) {
-  const project = getProjectBySlug(params.slug);
+export async function generateMetadata({ params }: Props) {
+  const { slug } = await params;
+  const project = getProjectBySlug(slug);
   if (!project) return {};
   return {
     title: `${project.title} | Geoffrey Kenga`,
@@ -68,13 +74,10 @@ function InsightCard({ number, text }: { number: number; text: string }) {
   );
 }
 
-/* ── Dashboard image gallery ── */
 function DashboardGallery({
   images,
-  projectTitle,
 }: {
   images: { src: string; alt: string; caption: string }[];
-  projectTitle: string;
 }) {
   return (
     <section>
@@ -84,14 +87,12 @@ function DashboardGallery({
         These are the actual dashboards built for this project. Click any image
         to open full size.
       </p>
-
       <div className="space-y-5">
         {images.map((img, i) => (
           <div
             key={i}
             className="group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40"
           >
-            {/* Image */}
             <a
               href={img.src}
               target="_blank"
@@ -108,7 +109,6 @@ function DashboardGallery({
                   priority={i === 0}
                 />
               </div>
-              {/* Hover overlay */}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200 flex items-center justify-center">
                 <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 inline-flex items-center gap-2 px-4 py-2 bg-white/90 dark:bg-gray-900/90 text-gray-900 dark:text-white rounded-lg text-sm font-medium shadow-lg">
                   <svg
@@ -128,7 +128,6 @@ function DashboardGallery({
                 </span>
               </div>
             </a>
-            {/* Caption */}
             <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800">
               <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                 <span className="font-semibold text-gray-700 dark:text-gray-300">
@@ -144,12 +143,9 @@ function DashboardGallery({
   );
 }
 
-export default function ProjectDetailPage({
-  params,
-}: {
-  params: { slug: string };
-}) {
-  const project = getProjectBySlug(params.slug);
+export default async function ProjectDetailPage({ params }: Props) {
+  const { slug } = await params;
+  const project = getProjectBySlug(slug);
   if (!project) notFound();
 
   const otherProjects = projects.filter((p) => p.slug !== project.slug);
@@ -262,7 +258,7 @@ export default function ProjectDetailPage({
       {/* ── Body ── */}
       <Container className="py-16">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-16 items-start">
-          {/* LEFT: Main narrative */}
+          {/* LEFT */}
           <div>
             <section>
               <EyebrowLabel>The Business Problem</EyebrowLabel>
@@ -302,13 +298,9 @@ export default function ProjectDetailPage({
 
             <Divider />
 
-            {/* ── DASHBOARD SCREENSHOTS — just above Key Insights ── */}
             {project.dashboards && project.dashboards.length > 0 && (
               <>
-                <DashboardGallery
-                  images={project.dashboards}
-                  projectTitle={project.title}
-                />
+                <DashboardGallery images={project.dashboards} />
                 <Divider />
               </>
             )}
@@ -353,7 +345,6 @@ export default function ProjectDetailPage({
               </blockquote>
             </section>
 
-            {/* Bottom CTA */}
             <div className="mt-16 p-8 rounded-2xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
               <div>
                 <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-1">
@@ -380,9 +371,8 @@ export default function ProjectDetailPage({
             </div>
           </div>
 
-          {/* RIGHT: Sticky sidebar */}
+          {/* RIGHT sidebar */}
           <aside className="space-y-5 lg:sticky lg:top-24">
-            {/* Tech Stack */}
             <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60">
                 <EyebrowLabel>Tech Stack</EyebrowLabel>
@@ -401,14 +391,12 @@ export default function ProjectDetailPage({
               </div>
             </div>
 
-            {/* GitHub — direct project link */}
             <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
               <h3 className="font-bold text-gray-900 dark:text-white mb-1.5">
                 View the code
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Full SQL queries, dbt models, and documentation for this project
-                on GitHub.
+                Full SQL queries, dbt models, and documentation on GitHub.
               </p>
               <a
                 href={project.github}
@@ -427,7 +415,6 @@ export default function ProjectDetailPage({
               </a>
             </div>
 
-            {/* More projects */}
             <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
                 <h3 className="font-bold text-sm text-gray-900 dark:text-white">
